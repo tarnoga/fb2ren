@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import optparse, glob
+from os import path, sep, rename
+from lxml import etree
+#from pdb import set_trace
+
+
+def find_all_ns(elem, tag):
+
+    result = []
+    for ns in elem.nsmap.values():
+        result = result + elem.findall('.//{%s}%s' %(ns, tag))
+    return result   
+
+
+def parse_name(filename):
+
+    out_name = u''
+    try:
+        root = etree.parse(filename).getroot()
+        title_info = find_all_ns(root, 'title-info')[0]
+    except:
+        return ''
+
+    title_elem = find_all_ns(title_info, 'book-title')
+    try:  
+        out_name = title_elem[0].text
+    except:
+        return ''
+
+    author = find_all_ns(title_info, 'author')
+    try:
+        author_elem = author[0]
+        first_name = find_all_ns(author_elem, 'first-name')[0].text
+        last_name = find_all_ns(author_elem, 'last-name')[0].text
+    except:
+        return ''    
+
+    if not last_name:
+        author_name = first_name
+    else:
+        author_name = last_name
+
+    if author_name:
+        out_name = '%s - %s' %(author_name.strip(), out_name.strip())
+
+    out_name = out_name.replace(':', '')
+    out_name = out_name.replace('/', '_')
+
+    return out_name
+
+
+def main():
+
+    opt = optparse.OptionParser(description='Rename FB2 files',
+                                    prog='fb2ren',
+                                    version='0.1',
+                                    usage=u'fb2ren -r|-p [DIR]')
+    opt.add_option('--preview', '-p', action='store_true',
+                   help='Preview', default=False)    
+    opt.add_option('--rename', '-r', action='store_true',
+                   help='Rename', default=False)     
+    options, arguments = opt.parse_args()
+
+    if (options.rename and options.preview) or not(options.rename or options.preview)\
+        or not arguments:
+        opt.print_help()
+        return
+
+    not_renamed = []
+    for target_dir in arguments:
+        if path.exists(u'' + target_dir):
+            filenames = glob.glob(u'' + '%s%s*.[fF][bB]2' %(target_dir, sep))
+            for filename in filenames:
+                new_filename = parse_name(filename)
+                if new_filename:
+                    print ('"%s" -> "%s.fb2"' %(filename, new_filename))
+                    if options.rename:
+                        rename(filename, u'' + '%s%s%s.fb2' %(target_dir,\
+                                                              sep, new_filename))  
+                else:
+                    print(u'!!! Can`t rename: %s' %filename)
+                    not_renamed.append(filename)
+
+
+if __name__ == '__main__':
+    main()
