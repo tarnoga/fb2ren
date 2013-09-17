@@ -61,7 +61,9 @@ def main():
     opt.add_option('--preview', '-p', action='store_true',
                    help='Preview', default=False)    
     opt.add_option('--rename', '-r', action='store_true',
-                   help='Rename', default=False)     
+                   help='Rename', default=False)
+    opt.add_option('--mute', '-m', action='store_true',
+                   help='Mute', default=False)                    
     options, arguments = opt.parse_args()
 
     if (options.rename and options.preview) or not(options.rename or options.preview)\
@@ -74,12 +76,14 @@ def main():
         if path.exists(filename):
             new_filename = parse_name(filename)
             if new_filename:
-                print ('"%s" -> "%s.fb2"' %(filename, new_filename))
+                if not options.mute:
+                    print ('"%s" -> "%s.fb2"' %(filename, new_filename))
                 if options.rename:
                     rename(filename, u'' + '%s%s%s.fb2' %(path.dirname(filename),\
                                                           sep, new_filename))  
             else:
-                print(u'!!! Can`t rename: %s' %filename)
+                if not options.mute:
+                    print(u'!!! Can`t rename: %s' %filename)
                 not_renamed.append(filename)
 
 
