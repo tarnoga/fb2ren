@@ -73,18 +73,19 @@ def main():
 
     not_renamed = []
     for filename in arguments:
-        if path.exists(filename):
-            new_filename = parse_name(filename)
+        ufilename = unicode(filename, 'utf-8')
+        if path.exists(ufilename):
+            new_filename = parse_name(ufilename)
             if new_filename:
                 if not options.mute:
-                    print ('"%s" -> "%s.fb2"' %(filename, new_filename))
+                    print (u'"%s" -> "%s.fb2"' %(ufilename, new_filename))
                 if options.rename:
-                    rename(filename, u'' + '%s%s%s.fb2' %(path.dirname(filename),\
+                    rename(ufilename, u'' + '%s%s%s.fb2' %(path.dirname(ufilename),\
                                                           sep, new_filename))  
             else:
                 if not options.mute:
-                    print(u'!!! Can`t rename: %s' %filename)
-                not_renamed.append(filename)
+                    print(u'!!! Can`t rename: %s' %ufilename)
+                not_renamed.append(ufilename)
 
 
 if __name__ == '__main__':
