@@ -57,7 +57,7 @@ def main():
     opt = optparse.OptionParser(description='Rename FB2 files',
                                     prog='fb2ren',
                                     version='0.1',
-                                    usage=u'fb2ren -r|-p [DIR]')
+                                    usage=u'fb2ren -r|-p [FILES]')
     opt.add_option('--preview', '-p', action='store_true',
                    help='Preview', default=False)    
     opt.add_option('--rename', '-r', action='store_true',
@@ -70,19 +70,17 @@ def main():
         return
 
     not_renamed = []
-    for target_dir in arguments:
-        if path.exists(u'' + target_dir):
-            filenames = glob.glob(u'' + '%s%s*.[fF][bB]2' %(target_dir, sep))
-            for filename in filenames:
-                new_filename = parse_name(filename)
-                if new_filename:
-                    print ('"%s" -> "%s.fb2"' %(filename, new_filename))
-                    if options.rename:
-                        rename(filename, u'' + '%s%s%s.fb2' %(target_dir,\
-                                                              sep, new_filename))  
-                else:
-                    print(u'!!! Can`t rename: %s' %filename)
-                    not_renamed.append(filename)
+    for filename in arguments:
+        if path.exists(filename):
+            new_filename = parse_name(filename)
+            if new_filename:
+                print ('"%s" -> "%s.fb2"' %(filename, new_filename))
+                if options.rename:
+                    rename(filename, u'' + '%s%s%s.fb2' %(path.dirname(filename),\
+                                                          sep, new_filename))  
+            else:
+                print(u'!!! Can`t rename: %s' %filename)
+                not_renamed.append(filename)
 
 
 if __name__ == '__main__':
