@@ -26,7 +26,14 @@ def parse_file(filename):
     except:
         return ''
 
-    first_name_text = last_name_text = middle_name_text = ''
+    first_name_text = last_name_text = middle_name_text = book_title_text = ''
+
+    book_title_list = find_all_ns(title_info, 'book-title')
+    if book_title_list:
+        book_title = book_title_list[0]
+        book_title_text = book_title.text
+    else:
+        book_title = etree.SubElement(title_info, 'book-title')
 
     last_name_list = find_all_ns(author, 'last-name')
     if last_name_list:
@@ -52,7 +59,7 @@ def parse_file(filename):
     dialog = gtk.Dialog(buttons=(gtk.STOCK_OK, gtk.RESPONSE_OK,
                              gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
 
-    table = gtk.Table(3, 2)
+    table = gtk.Table(4, 2)
     table.set_row_spacings(4)
     table.set_col_spacings(4)
     dialog.vbox.pack_start(table, True, True, 0)
@@ -78,12 +85,20 @@ def parse_file(filename):
     table.attach(ln_entr, 1, 2, 2, 3)
     ln_label.set_mnemonic_widget(ln_entr)
 
+    bt_label = gtk.Label('Book Title')
+    table.attach(bt_label, 0, 1, 3, 4)
+    bt_entr = gtk.Entry()
+    bt_entr.set_text(book_title_text)
+    table.attach(bt_entr, 1, 2, 3, 4)
+    bt_label.set_mnemonic_widget(bt_entr)
+
     dialog.show_all()
     response = dialog.run()
     if response == gtk.RESPONSE_OK:
         first_name.text = unicode(fn_entr.get_text())
         middle_name.text = unicode(mn_entr.get_text())
         last_name.text = unicode(ln_entr.get_text())
+        book_title.text = unicode(bt_entr.get_text())
         return etree.tostring(root, pretty_print=True, encoding='utf-8')
     return ''
 
