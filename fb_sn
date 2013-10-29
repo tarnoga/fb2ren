@@ -1,0 +1,189 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from optparse import OptionParser
+from os import path
+from lxml import etree
+from pdb import set_trace
+
+
+DIGITS = u'0123456789'
+RU_LETTERS = u'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'
+EN_LETTERS = u'«abcdefgijklmnopqrstuvwxyzABCDEFGIJKLMNOPQRSTUVWXYZ'
+LETTERS = RU_LETTERS + EN_LETTERS
+
+
+def find_all_ns(elem, tag):
+
+    result = []
+    for ns in elem.nsmap.values():
+        result = result + elem.findall('.//{%s}%s' %(ns, tag))
+    return result
+
+
+def title(elem):
+
+    #set_trace()
+    try:
+        return find_all_ns(find_all_ns(elem, u'title')[0], 'p')[0].text
+    except:
+        return '' 
+
+
+def parse_notes(notes_root):
+
+    notes = {}
+    n_sections = find_all_ns(notes_root, 'section')
+
+    for n_section in n_sections:
+        n_title = title(n_section).encode('utf-8')
+        #set_trace()
+        try:
+            s_title = n_title[n_title.find('«')+2:n_title.find('»')]
+        except:
+            s_title = 'Error'
+        print('Обрабатываются примечания к главе "%s"' %s_title)
+
+        sec_notes = {}
+        for n_par in find_all_ns(n_section, 'p')[1:]:
+            n_par_text = n_par.text.strip()
+            if n_par_text[0] in DIGITS:
+                if n_par_text[1] in DIGITS:
+                    sec_notes[n_par_text[:2]] = n_par_text[2:]
+                else:
+                    sec_notes[n_par_text[:1]] = n_par_text[1:]
+            else:
+                print(n_par_text)
+        notes[s_title] = sec_notes
+
+    return notes
+
+
+def parse_word(word):
+    #print(word)
+
+    last = ''
+    if word[-1] not in DIGITS:
+        last, word = word[-1], word[0:-1]
+
+    first = middle = ''
+    for i in range(len(word)):
+        if word[i] in DIGITS:
+            first, middle = word[:i], word[i:]
+            break
+    try:
+        foot_num = int(middle)
+    except:
+        foot_num = 0
+
+    return (first, last, foot_num)
+
+
+def parse_file(filename):
+
+    try:
+        tree = etree.parse(filename)
+        root = tree.getroot()
+    except:
+        return 'Не удалось открыть XML: ' + filename 
+
+    #find last <body>
+    elem = 0
+    for elem in range(len(root)):
+        if 'body' in root[elem].tag:
+            last_body =  elem
+
+    body = find_all_ns(root, 'body')[0]
+    sections = find_all_ns(body, 'section')
+
+    for section in sections:
+        current_title = title(section)
+        if current_title == u'Примечания':
+            notes = parse_notes(section)
+            body.remove(section)
+            break
+
+    current_note = 0
+    notes_elem = etree.Element('body', name='notes')
+    notes_elem_title = etree.SubElement(notes_elem, 'title')
+    notes_elem_title.text = u'Примечания'
+
+    sections = find_all_ns(body, 'section')
+    for section in sections:
+        current_title = title(section).encode('utf-8')
+        curren_sec_note = 1
+
+        print('Обрабатывается глава "%s"' %current_title)
+        if not current_title in notes:
+            print('Главы нет в примечаниях!')
+
+        for parag_i in range(len(section))[1:]:
+            parag = section[parag_i]
+            word_list = parag.text.split(' ')
+            for wi in range(len(word_list)):
+                word = word_list[wi]
+                #set_trace()
+                if (len(word)>0 and word[-1] in DIGITS\
+                or (len(word)>1 and word[-2] in DIGITS))\
+                and word[0] in LETTERS:
+                    word_first, word_last, foot_num = parse_word(word)
+                    #set_trace()
+                    if foot_num and str(foot_num) in notes[current_title]:
+                        note_xml = '<a href="#n_%s" type="note">[%s]</a>'\
+                            %(str(current_note), str(foot_num))
+                        #print(note_xml)
+                        word_list[wi] = '%s%s%s' %(word_first, note_xml, word_last)
+                        note_elem = etree.Element('section', id = 'n_%s' %str(current_note))
+                        note_elem_title = etree.SubElement(note_elem, 'title')
+                        title_p = etree.SubElement(note_elem_title, 'p')
+                        title_p.text = str(foot_num)
+                        note_elem_p = etree.SubElement(note_elem, 'p')
+                        note_elem_p.text = notes[current_title][str(foot_num)]
+                        notes_elem.append(note_elem)
+                        current_note += 1
+                        if foot_num != curren_sec_note:
+                            print('!!! Отсутствует примечание '+str(curren_sec_note))
+                            print(word_list[wi])
+                            curren_sec_note = foot_num + 1
+                        else:
+                            curren_sec_note += 1 
+                    else:
+                        word_list[wi] = '%s%s' %(word_first, word_last)
+
+            parag_text = ' '.join(word_list)
+            #set_trace()
+            section[parag_i] = etree.XML('<p>%s</p>' %parag_text)
+
+    root.insert(last_body+1, notes_elem)
+    tree_string = etree.tostring(root,\
+        pretty_print=True, encoding='utf-8').replace('a href=', 'a l:href=')
+    return tree_string
+
+
+def main():
+
+    opt = OptionParser(description='',
+                        prog='fb_sn',
+                        version='0.1',
+                        usage=u'fb_sn [--save|-s] [FILES]')
+    opt.add_option('--save', '-s', action='store_true',
+        help='Save file', default=False)    
+    options, arguments = opt.parse_args()
+
+    for filename in arguments:
+        if not path.exists(filename):
+            continue
+        if not path.isfile(filename):
+            continue
+        tree_string = parse_file(filename)
+        if options.save:
+            out_file = open(filename, 'w')
+            out_file.write(tree_string)
+            out_file.close()
+            print('Записан файл: ' + filename)            
+        else:
+            print('Обработан файл: ' + filename)            
+
+
+if __name__ == '__main__':
+    main()

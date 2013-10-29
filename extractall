@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
+from optparse import OptionParser
+from zipfile import ZipFile
+from os import path, sep
+from glob import glob
+
+
+def main():
+    opt = OptionParser(description='Unzip zip files',
+                        prog='extractall',
+                        version='0.1',
+                        usage=u'extractall [FILES]')
+    options, arguments = opt.parse_args()
+
+    for filename in arguments:
+        if path.exists(filename):
+            try:
+                zf = ZipFile(filename, 'r')     
+                zf.extractall(path.dirname(filename))
+            except:
+                pass
+                    
+
+if __name__ == '__main__':
+    main()
