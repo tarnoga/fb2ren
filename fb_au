@@ -38,21 +38,24 @@ def parse_file(filename):
     last_name_list = find_all_ns(author, 'last-name')
     if last_name_list:
         last_name = last_name_list[0]
-        last_name_text = last_name.text
+        if last_name.text:
+            last_name_text = last_name.text
     else:
         last_name = etree.SubElement(author, 'last-name')
 
     first_name_list = find_all_ns(author, 'first-name')
     if first_name_list:
         first_name = first_name_list[0]
-        first_name_text = first_name.text
+        if first_name.text:
+            first_name_text = first_name.text
     else:
         first_name = etree.SubElement(author, 'first-name')
 
     middle_name_list = find_all_ns(author, 'middle-name')
     if middle_name_list:
         middle_name = middle_name_list[0]
-        middle_name_text = middle_name.text
+        if middle_name.text:
+            middle_name_text = middle_name.text
     else:
         middle_name = etree.SubElement(author, 'middle-name')
 
