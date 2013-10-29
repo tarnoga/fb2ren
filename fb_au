@@ -31,7 +31,8 @@ def parse_file(filename):
     book_title_list = find_all_ns(title_info, 'book-title')
     if book_title_list:
         book_title = book_title_list[0]
-        book_title_text = book_title.text
+        if book_title.text:
+            book_title_text = book_title.text.strip()
     else:
         book_title = etree.SubElement(title_info, 'book-title')
 
@@ -39,7 +40,7 @@ def parse_file(filename):
     if last_name_list:
         last_name = last_name_list[0]
         if last_name.text:
-            last_name_text = last_name.text
+            last_name_text = last_name.text.strip()
     else:
         last_name = etree.SubElement(author, 'last-name')
 
@@ -47,7 +48,7 @@ def parse_file(filename):
     if first_name_list:
         first_name = first_name_list[0]
         if first_name.text:
-            first_name_text = first_name.text
+            first_name_text = first_name.text.strip()
     else:
         first_name = etree.SubElement(author, 'first-name')
 
@@ -55,7 +56,7 @@ def parse_file(filename):
     if middle_name_list:
         middle_name = middle_name_list[0]
         if middle_name.text:
-            middle_name_text = middle_name.text
+            middle_name_text = middle_name.text.strip()
     else:
         middle_name = etree.SubElement(author, 'middle-name')
 
